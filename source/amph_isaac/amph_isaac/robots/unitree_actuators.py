@@ -125,8 +125,14 @@ class UnitreeActuatorCfg_Go2HV(UnitreeActuatorCfg):
     # Y1 = 20.2
     # Y2 = 23.4
 
+    # X1 = 6.00
+    # X2 = 12.00
+    # Y1 = 3.5
+    # Y2 = 3.5
+
     X1 = 6.00
     X2 = 12.00
     Y1 = 3.5
     Y2 = 3.5
+
 

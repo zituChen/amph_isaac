@@ -24,14 +24,14 @@ class AmphrobotUsdFileCfg(sim_utils.UsdFileCfg):
     rigid_props = sim_utils.RigidBodyPropertiesCfg(
         disable_gravity=False,
         retain_accelerations=False,
-        linear_damping=0.0,
-        angular_damping=0.0,
+        linear_damping=0.05,
+        angular_damping=0.05,
         max_linear_velocity=1000.0,
         max_angular_velocity=1000.0,
         max_depenetration_velocity=1.0,
     )
     articulation_props = sim_utils.ArticulationRootPropertiesCfg(
-        enabled_self_collisions=True, solver_position_iteration_count=8, solver_velocity_iteration_count=4
+        enabled_self_collisions=False, solver_position_iteration_count=8, solver_velocity_iteration_count=4
     )
 
 """ Configuration for the Amphrobot robots."""
@@ -58,9 +58,9 @@ AMPHROBOT_CFG = AmphrobotArticulationCfg(
     actuators={
         "GO2HV": unitree_actuators.UnitreeActuatorCfg_Go2HV(
             joint_names_expr=[".*"],
-            stiffness=25.0,
-            damping=0.5,
-            friction=0.01,
+            stiffness=60.0,
+            damping=1.5,
+            friction=0.02,
         ),
     },
     # fmt: off
