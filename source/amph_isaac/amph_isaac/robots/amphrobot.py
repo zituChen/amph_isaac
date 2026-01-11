@@ -8,6 +8,18 @@ from isaaclab.utils import configclass
 
 from amph_isaac.robots import unitree_actuators
 
+from isaaclab.actuators import DCMotorCfg
+
+
+ANYDRIVE_3_SIMPLE_ACTUATOR_CFG = DCMotorCfg(
+    joint_names_expr=[".*"],
+    saturation_effort=3.5,
+    effort_limit=3.5,
+    velocity_limit=12,
+    stiffness={".*": 8.0},
+    damping={".*": 0.5},
+)
+
 
 @configclass
 class AmphrobotArticulationCfg(ArticulationCfg):
@@ -15,7 +27,7 @@ class AmphrobotArticulationCfg(ArticulationCfg):
 
     joint_sdk_names: list[str] = None
 
-    soft_joint_pos_limit_factor = 0.9
+    soft_joint_pos_limit_factor = 0.95
 
 
 @configclass
@@ -31,7 +43,7 @@ class AmphrobotUsdFileCfg(sim_utils.UsdFileCfg):
         max_depenetration_velocity=1.0,
     )
     articulation_props = sim_utils.ArticulationRootPropertiesCfg(
-        enabled_self_collisions=False, solver_position_iteration_count=8, solver_velocity_iteration_count=4
+        enabled_self_collisions=True, solver_position_iteration_count=8, solver_velocity_iteration_count=4
     )
 
 """ Configuration for the Amphrobot robots."""
@@ -55,14 +67,19 @@ AMPHROBOT_CFG = AmphrobotArticulationCfg(
         },
         joint_vel={".*": 0.0},
     ),
-    actuators={
-        "GO2HV": unitree_actuators.UnitreeActuatorCfg_Go2HV(
-            joint_names_expr=[".*"],
-            stiffness=60.0,
-            damping=1.5,
-            friction=0.02,
-        ),
-    },
+
+    # actuators={
+    #     "GO2HV": unitree_actuators.UnitreeActuatorCfg_Go2HV(
+    #         joint_names_expr=[".*"],
+    #         stiffness=60.0,
+    #         damping=1.5,
+    #         friction=0.02,
+    #     ),
+    # },
+
+    actuators={"legs": ANYDRIVE_3_SIMPLE_ACTUATOR_CFG},
+
+
     # fmt: off
     joint_sdk_names=[
         "Front_Left_Side_joint", "Front_Left_Thigh_joint", "Front_Left_Calf_joint",
