@@ -110,6 +110,103 @@ torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = False
 
 
+
+#---------------------------------------------------------------------------------
+class DebugBaseContactForces(gym.Wrapper):
+    """Print base_link contact force magnitude from ContactSensor."""
+
+    def __init__(
+        self,
+        env,
+        sensor_name: str = "contact_forces",
+        robot_name: str = "robot",
+        base_body_name: str = "base_link",
+        threshold: float = 1.0,
+        print_every: int = 1,
+        only_when_done: bool = True,
+    ):
+        super().__init__(env)
+        self.sensor_name = sensor_name
+        self.robot_name = robot_name
+        self.base_body_name = base_body_name
+        self.threshold = threshold
+        self.print_every = print_every
+        self.only_when_done = only_when_done
+        self._step_count = 0
+        self._base_body_id = None  # resolved lazily
+
+    def _resolve_ids(self):
+        # Resolve body index once the sim is live
+        if self._base_body_id is not None:
+            return
+
+        uenv = self.env.unwrapped
+        robot = uenv.scene[self.robot_name]
+
+        # IsaacLab articulations typically provide find_bodies(pattern or name).
+        # We try common patterns to be robust.
+        try:
+            ids, _ = robot.find_bodies(self.base_body_name)
+            self._base_body_id = int(ids[0])
+            return
+        except Exception:
+            pass
+
+        try:
+            ids = robot.find_bodies(self.base_body_name)
+            self._base_body_id = int(ids[0])
+            return
+        except Exception as e:
+            raise RuntimeError(
+                f"Could not resolve base body id for '{self.base_body_name}'. "
+                f"Check the body/link name in USD/URDF."
+            ) from e
+
+    def step(self, action):
+        obs, rew, terminated, truncated, info = self.env.step(action)
+        self._step_count += 1
+
+        if self._step_count % self.print_every != 0:
+            return obs, rew, terminated, truncated, info
+
+        self._resolve_ids()
+
+        uenv = self.env.unwrapped
+        sensor = uenv.scene.sensors[self.sensor_name]
+
+        # net_forces_w_history: (num_envs, history_len, num_bodies, 3)
+        forces_hist = sensor.data.net_forces_w_history
+        # take most recent history frame
+        forces = forces_hist[:, 0, self._base_body_id, :]  # (num_envs, 3)
+
+        force_mag = torch.linalg.norm(forces, dim=-1)  # (num_envs,)
+
+        # Determine which envs to print
+        if self.only_when_done:
+            done_mask = torch.as_tensor(terminated) | torch.as_tensor(truncated)
+            idx = torch.nonzero(done_mask, as_tuple=False).squeeze(-1)
+        else:
+            idx = torch.arange(force_mag.shape[0], device=force_mag.device)
+
+        if idx.numel() > 0:
+            fm = force_mag[idx].detach().cpu()
+            fxyz = forces[idx].detach().cpu()
+
+            # Print a short summary + first few envs
+            worst = float(fm.max().item())
+            mean = float(fm.mean().item())
+            print(
+                f"[DEBUG][step={self._step_count}] base_link contact |F|: "
+                f"mean={mean:.3f}  max={worst:.3f}  (threshold={self.threshold})"
+            )
+            for k in range(min(5, idx.numel())):
+                env_id = int(idx[k].item())
+                print(f"  env {env_id}: |F|={fm[k]:.3f}  F={tuple(fxyz[k].tolist())}")
+
+        return obs, rew, terminated, truncated, info
+#----------------------------------------------------------------------------------------------
+
+
 @hydra_task_config(args_cli.task, args_cli.agent)
 def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agent_cfg: RslRlBaseRunnerCfg):
     """Train with RSL-RL agent."""
@@ -166,6 +263,18 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
 
     # create isaac environment
     env = gym.make(args_cli.task, cfg=env_cfg, render_mode="rgb_array" if args_cli.video else None)
+
+    
+    # # --- DEBUG: print base_link contact forces ---
+    # env = DebugBaseContactForces(
+    #     env,
+    #     sensor_name="contact_forces",
+    #     robot_name="robot",
+    #     base_body_name="base_link",
+    #     threshold=1.0,
+    #     print_every=10,          # increase to e.g. 10/50 to reduce spam
+    #     only_when_done=True,    # set False to print every step for all envs
+    # )
 
     # convert to single-agent instance if required by the RL algorithm
     if isinstance(env.unwrapped, DirectMARLEnv):

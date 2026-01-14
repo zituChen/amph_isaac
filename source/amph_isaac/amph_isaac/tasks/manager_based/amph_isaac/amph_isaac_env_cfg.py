@@ -100,7 +100,7 @@ class CommandsCfg:
         heading_control_stiffness=0.5,
         debug_vis=True,
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.0, 0.0), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0), heading=(0.0, 0.0)
+            lin_vel_x=(-1, 1), lin_vel_y=(-0.0, 0.0), ang_vel_z=(-0.0, 0.0), heading=(0.0, 0.0)
         ),
     )
 
@@ -109,7 +109,7 @@ class CommandsCfg:
 class ActionsCfg:
     """Action specifications for the MDP."""
 
-    joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.5, use_default_offset=True)
+    joint_pos = mdp.JointPositionActionCfg(asset_name="robot", joint_names=[".*"], scale=0.1, use_default_offset=True)
 
 
 @configclass
@@ -205,14 +205,24 @@ class EventCfg:
         mode="reset",
         params={
             "pose_range": {"x": (-0.5, 0.5), "y": (-0.5, 0.5), "yaw": (-3.14, 3.14)},
+            # "velocity_range": {
+            #     "x": (-0.5, 0.5),
+            #     "y": (-0.5, 0.5),
+            #     "z": (-0.5, 0.5),
+            #     "roll": (-0.5, 0.5),
+            #     "pitch": (-0.5, 0.5),
+            #     "yaw": (-0.5, 0.5),
+            # },
+
             "velocity_range": {
-                "x": (-0.5, 0.5),
-                "y": (-0.5, 0.5),
-                "z": (-0.5, 0.5),
-                "roll": (-0.5, 0.5),
-                "pitch": (-0.5, 0.5),
-                "yaw": (-0.5, 0.5),
+                "x": (0.0, 0.0),
+                "y": (0.0, 0.0),
+                "z": (0.0, 0.0),
+                "roll": (0.0, 0.0),
+                "pitch": (0.0, 0.0),
+                "yaw": (0.0, 0.0),
             },
+
         },
     )
 
@@ -240,7 +250,7 @@ class RewardsCfg:
 
     # -- task
     track_lin_vel_xy_exp = RewTerm(
-        func=mdp.track_lin_vel_xy_exp, weight=1.0, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
+        func=mdp.track_lin_vel_xy_exp, weight=3, params={"command_name": "base_velocity", "std": math.sqrt(0.25)} #modified
     )
     track_ang_vel_z_exp = RewTerm(
         func=mdp.track_ang_vel_z_exp, weight=0.5, params={"command_name": "base_velocity", "std": math.sqrt(0.25)}
@@ -248,25 +258,33 @@ class RewardsCfg:
     # -- penalties
     lin_vel_z_l2 = RewTerm(func=mdp.lin_vel_z_l2, weight=-2.0)
     ang_vel_xy_l2 = RewTerm(func=mdp.ang_vel_xy_l2, weight=-0.05)
-    dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-1.0e-5)
-    dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-2.5e-7) #-2.5e-7
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
+    dof_torques_l2 = RewTerm(func=mdp.joint_torques_l2, weight=-5e-5) #modified
+    dof_acc_l2 = RewTerm(func=mdp.joint_acc_l2, weight=-5e-9) #modified
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.001) #modified
     feet_air_time = RewTerm(
         func=mdp.feet_air_time,
-        weight=0.125,
+        weight=1,
         params={
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_Calf_link"),
             "command_name": "base_velocity",
-            "threshold": 0.5,
+            "threshold": 0.2,#modified
         },
     )
+    feet_slide = RewTerm(
+        func=mdp.feet_slide,
+        weight=-0.2,
+        params={
+            "asset_cfg": SceneEntityCfg("robot", body_names=".*_Calf_link"),
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_Calf_link"),
+        },
+    )# added 
     undesired_contacts = RewTerm(
         func=mdp.undesired_contacts,
         weight=-1.0,
         params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*_Thigh_link"), "threshold": 1.0},
     )
     # -- optional penalties
-    flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=0.0)
+    flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=-1)
     dof_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=0.0)
 
 
