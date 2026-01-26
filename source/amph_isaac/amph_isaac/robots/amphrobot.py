@@ -8,7 +8,30 @@ from isaaclab.utils import configclass
 
 from amph_isaac.robots import unitree_actuators
 
-from isaaclab.actuators import DCMotorCfg
+from isaaclab.actuators import DCMotorCfg, ImplicitActuatorCfg
+
+
+AMPH_ACTUATOR_CFG = ImplicitActuatorCfg(
+    joint_names_expr=[
+        "Front_Left_Side_joint", 
+        "Front_Right_Side_joint", 
+        "Hind_Left_Side_joint", 
+        "Hind_Right_Side_joint", 
+        "Front_Left_Thigh_joint", 
+        "Front_Right_Thigh_joint", 
+        "Hind_Left_Thigh_joint", 
+        "Hind_Right_Thigh_joint",
+        "Front_Left_Calf_joint", 
+        "Front_Right_Calf_joint", 
+        "Hind_Left_Calf_joint", 
+        "Hind_Right_Calf_joint",  
+    ],
+    effort_limit=3.5,
+    velocity_limit=6.0,
+    stiffness=8,
+    damping=0.5,
+    friction=0.01,
+)
 
 
 ANYDRIVE_3_SIMPLE_ACTUATOR_CFG = DCMotorCfg(
@@ -77,16 +100,22 @@ AMPHROBOT_CFG = AmphrobotArticulationCfg(
     #     ),
     # },
 
-    actuators={"legs": ANYDRIVE_3_SIMPLE_ACTUATOR_CFG},
+    actuators={"legs": AMPH_ACTUATOR_CFG},
 
 
     # fmt: off
     joint_sdk_names=[
-        "Front_Left_Side_joint", "Front_Left_Thigh_joint", "Front_Left_Calf_joint", "Front_Left_Foot_joint"
-        "Front_Right_Side_joint", "Front_Right_Thigh_joint", "Front_Right_Calf_joint", "Front_Right_Foot_joint"
-        "Hind_Left_Side_joint", "Hind_Left_Thigh_joint", "Hind_Left_Calf_joint", "Hind_Left_Foot_joint"
-        "Hind_Right_Side_joint", "Hind_Right_Thigh_joint", "Hind_Right_Calf_joint", "Hind_Right_Foot_joint"
+        "Front_Left_Side_joint", "Front_Right_Side_joint", "Hind_Left_Side_joint", "Hind_Right_Side_joint", 
+        "Front_Left_Thigh_joint", "Front_Right_Thigh_joint", "Hind_Left_Thigh_joint", "Hind_Right_Thigh_joint",
+        "Front_Left_Calf_joint", "Front_Right_Calf_joint", "Hind_Left_Calf_joint", "Hind_Right_Calf_joint",  
     ],
+
+    # joint_sdk_names=[
+    #     "Front_Left_Side_joint", "Front_Left_Thigh_joint", "Front_Left_Calf_joint", "Front_Left_Foot_joint",
+    #     "Front_Right_Side_joint", "Front_Right_Thigh_joint", "Front_Right_Calf_joint", "Front_Right_Foot_joint",
+    #     "Hind_Left_Side_joint", "Hind_Left_Thigh_joint", "Hind_Left_Calf_joint", "Hind_Left_Foot_joint",
+    #     "Hind_Right_Side_joint", "Hind_Right_Thigh_joint", "Hind_Right_Calf_joint", "Hind_Right_Foot_joint"
+    # ],
     # fmt: on
 )
 

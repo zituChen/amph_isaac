@@ -264,6 +264,91 @@ def main(env_cfg: ManagerBasedRLEnvCfg | DirectRLEnvCfg | DirectMARLEnvCfg, agen
     # create isaac environment
     env = gym.make(args_cli.task, cfg=env_cfg, render_mode="rgb_array" if args_cli.video else None)
 
+    # ------------------- DEBUG JOINT ORDER -------------------
+    # uenv = env.unwrapped
+    # robot = uenv.scene["robot"]
+
+    # 1) The simulator/articulation joint order (index -> joint name)
+    # IsaacLab commonly exposes one of these attributes depending on version.
+    # joint_names = None
+    # for attr in ["joint_names", "dof_names"]:
+    #     if hasattr(robot, attr):
+    #         joint_names = list(getattr(robot, attr))
+    #         break
+
+    # if joint_names is None and hasattr(robot, "data") and hasattr(robot.data, "joint_names"):
+    #     joint_names = list(robot.data.joint_names)
+
+    # print("\n[DEBUG] Robot joint order (index -> name):")
+    # if joint_names is not None:
+    #     for i, n in enumerate(joint_names):
+    #         print(f"  {i:02d}: {n}")
+    # else:
+    #     print("  Could not find joint names on robot. Try robot, robot.data attributes.")
+
+    # # 2) Compare against cfg's joint_sdk_names (if present)
+    # sdk_list = getattr(env_cfg.scene.robot, "joint_sdk_names", None)
+    # if sdk_list is not None:
+    #     print("\n[DEBUG] cfg.scene.robot.joint_sdk_names:")
+    #     for i, n in enumerate(list(sdk_list)):
+    #         print(f"  sdk[{i:02d}]: {n}")
+
+    #     if joint_names is not None:
+    #         same = (list(sdk_list) == joint_names)
+    #         print(f"\n[DEBUG] Exact match (sdk_list == sim_joint_order)? {same}")
+
+    #         # Show first mismatch if any
+    #         if not same:
+    #             min_len = min(len(sdk_list), len(joint_names))
+    #             for i in range(min_len):
+    #                 if sdk_list[i] != joint_names[i]:
+    #                     print(f"[DEBUG] First mismatch at index {i}: sdk='{sdk_list[i]}' vs sim='{joint_names[i]}'")
+    #                     break
+    #             if len(sdk_list) != len(joint_names):
+    #                 print(f"[DEBUG] Length differs: sdk={len(sdk_list)} vs sim={len(joint_names)}")
+    # ---------------------------------------------------------
+
+    # ------------------- DEBUG ACTION TERM JOINT IDS -------------------
+    # if hasattr(uenv, "action_manager"):
+    #     am = uenv.action_manager
+
+    #     # Try to find the joint position action term
+    #     term = None
+    #     for attr in ["terms", "_terms"]:
+    #         if hasattr(am, attr):
+    #             for k, v in getattr(am, attr).items():
+    #                 if "joint" in k:
+    #                     term = v
+    #                     print(f"[DEBUG] Found action term: {k}")
+    #                     break
+
+    #     if term is None:
+    #         print("[DEBUG] Could not find joint action term")
+    #     else:
+    #         # Try common joint-id attributes
+    #         ids = None
+    #         for attr in ["joint_ids", "_joint_ids", "dof_ids", "_dof_ids"]:
+    #             if hasattr(term, attr):
+    #                 ids = getattr(term, attr)
+    #                 print(f"[DEBUG] term.{attr}: {ids}")
+    #                 break
+
+    #         if ids is None:
+    #             print("[DEBUG] No joint id information found on action term")
+    #         else:
+    #             # -------- FIX: handle slice(None) --------
+    #             if isinstance(ids, slice):
+    #                 # slice(None) => all joints, in articulation order
+    #                 ids_list = list(range(len(joint_names)))[ids]
+    #             else:
+    #                 # tensor / list / numpy array
+    #                 ids_list = [int(i) for i in list(ids)]
+
+    #             print("\n[DEBUG] Action index -> joint name mapping:")
+    #             for a_i, j_i in enumerate(ids_list):
+    #                 print(f"  a[{a_i:02d}] -> joint[{j_i:02d}] = {joint_names[j_i]}")
+    # -------------------------------------------------------------------
+
     
     # # --- DEBUG: print base_link contact forces ---
     # env = DebugBaseContactForces(
